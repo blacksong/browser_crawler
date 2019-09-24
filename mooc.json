@@ -1,16 +1,15 @@
 {
-    "urls": [
-        [
+    "items": {
+        "urls_list":[[
             "http://www.imooc.com/course/list?page=1",
             "慕课网",
             "免费"
-        ]
-    ],
-    "items": {
+        ]],
         "course": "Go开发短地址服务",
         "level": "高级",
-        "hot":"1347",
+        "hot":"1416",
         "profile":"2小时带你通过GO语言实现短地址服务。",
-        "money":"免费"
+        "money":"免费",
+        "course.href":"/learn/1150"
     }
 }

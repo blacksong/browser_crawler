@@ -93,9 +93,11 @@ def init_auto_parse(auto_file):
     jdata = json.loads(open(auto_file).read())
     pages = [i for i in jdata.keys() if not i.endswith('_url')]
     pages.sort()
+    urls = []
     for page in pages:
         items = jdata[page]
-        url = jdata[page+'_url'][0]
+        url = items['urls_list'][0]
+        urls.append(items.pop('urls_list'))
         if not isinstance(url, str):
             url = url[0]
         html = get_html(url)
@@ -103,7 +105,7 @@ def init_auto_parse(auto_file):
         all_tag_text = [(i, i.text) for i in bs.find_all()]
         k = auto_parse.find_item_bs(bs, all_tag_text, items)
         global_marks.append(k)
-    return jdata[pages[0]+'_url']
+    return urls[0]
 def main(urls,auto_file=None):
     db = sqlite3.connect('spider_database.sqlite3')
     table_name = 'spider_record_ggg318'
@@ -180,4 +182,4 @@ def get_a_new_tab(driver):
     driver.execute_script(js)
 if __name__ == '__main__':
     
-    main(None,'./ggg318.json')
+    main(None,'./mooc.json')
