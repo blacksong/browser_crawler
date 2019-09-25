@@ -107,8 +107,8 @@ def init_auto_parse(auto_file):
         global_marks.append(k)
     return urls[0]
 def main(urls,auto_file=None):
-    db = sqlite3.connect('spider_database.sqlite3')
-    table_name = 'spider_record_ggg318'
+    # db = sqlite3.connect('spider_database.sqlite3')
+    # table_name = 'spider_record_ggg318'
     result = []
     driver = get_a_driver()
     now_date = time.strftime('%Y%m%d',time.gmtime())
@@ -143,9 +143,9 @@ def main(urls,auto_file=None):
                 for key in keys:
                     if key.startswith('clicked_'):
                         pass 
-            df = pd.DataFrame(rr)
-            df.to_sql(table_name,db,if_exists='append')
-            db.commit()
+            # df = pd.DataFrame(rr)
+            # df.to_sql(table_name,db,if_exists='append')
+            # db.commit()
             for i in rr:
                 result_count += 1
                 print(result_count)

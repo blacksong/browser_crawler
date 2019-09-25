@@ -1,15 +1,18 @@
 {
     "items": {
         "urls_list":[[
-            "http://www.imooc.com/course/list?page=1",
+            "https://coding.imooc.com",
             "慕课网",
-            "免费"
+            "实战课程"
         ]],
-        "course": "Go开发短地址服务",
-        "level": "高级",
-        "hot":"1416",
-        "profile":"2小时带你通过GO语言实现短地址服务。",
-        "money":"免费",
-        "course.href":"/learn/1150"
+        "course": "Linux核心技能与应用",
+        "level": "初级",
+        "hot":"9\\d",
+        "comment":"2人评价",
+        "profile":"一网打尽Linux必备核心技能，面试、升职必备的“敲门砖”。",
+        "cost-price":"￥266.00",
+        "discount-price":"￥229.00",
+        "course.href":"/class/386.html",
+        "course-price.attrs":[0,["div",{"class":"course-card-price"}]]
     }
 }
