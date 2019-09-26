@@ -19,42 +19,6 @@ import auto_parse
 global_attrs = {}
 global_browser = {'name':None}
 
-
-def parse_html(html):
-    bs = BeautifulSoup(html,'lxml')
-    t = bs.find(class_='m-course-list')
-    s = t.div.find_all(['div'],recursive=False)
-    rr = [parse_html_item(i) for i in s]
-    return rr
-def get_text(bs,**kargs):
-    t = bs.find(**kargs)
-    if t:
-        return t.text
-    else:
-        return ''
-def parse_html_item(item_bs):
-    item = dict()
-    try:
-        t = item_bs.find(['img'])
-        item['course'] = t.attrs['alt']
-        # t = item_bs.div.attrs['data-href']
-        item['course_url'] = item_bs.attrs['data-href']
-        item['national_course'] = '是' if item_bs.text.find('国家精品') != -1 else '否'
-        item['university'] = get_text(item_bs, class_='t21 f-fc9')
-        all_a = item_bs.find_all(['a'])
-        author = []
-        for i in all_a:
-            attrs = i.attrs.get('class')
-            if attrs is None:
-                continue
-            if attrs[0] == 'f-fc9':
-                author.append(i.text)
-        item['author'] = ','.join(author)
-        item['profile'] = get_text(item_bs,class_='p5 brief f-ib f-f0 f-cb')
-        item['hot'] = get_text(item_bs,class_='hot')
-    except:
-        pass
-    return item
 def get_a_driver():
     profile_path = '/home/yxs/.mozilla/firefox/sprj69sp.default'
     try:
@@ -96,8 +60,8 @@ def init_auto_parse(auto_file):
     urls = []
     for page in pages:
         items = jdata[page]
-        url = items['urls_list'][0]
-        urls.append(items.pop('urls_list'))
+        url = items['__urls__'][0]
+        urls.append(items['__urls__'])
         if not isinstance(url, str):
             url = url[0]
         html = get_html(url)
@@ -105,20 +69,15 @@ def init_auto_parse(auto_file):
         all_tag_text = [(i, i.text) for i in bs.find_all()]
         k = auto_parse.find_item_bs(bs, all_tag_text, items)
         global_marks.append(k)
-    return urls[0]
-def main(urls,auto_file=None):
-    # db = sqlite3.connect('spider_database.sqlite3')
-    # table_name = 'spider_record_ggg318'
+    next_button = jdata[pages[0]].get('__next__','下一页')
+    return urls[0],next_button
+def main(auto_file=None):
     result = []
     driver = get_a_driver()
     now_date = time.strftime('%Y%m%d',time.gmtime())
-    tt = init_auto_parse(auto_file)
+    tt,next_button = init_auto_parse(auto_file)
     result_count = 0
-    if tt:
-        urls = tt
-        is_auto = True 
-    else:
-        is_auto = False
+    urls = tt
     for item in urls:
         temp_result = []
         if isinstance(item,str):
@@ -130,10 +89,7 @@ def main(urls,auto_file=None):
         current_url0 = driver.current_url
         while True:
             html = driver.page_source
-            if is_auto:
-                rr = auto_parse.auto_parse_html(html,global_marks[0])
-            else:
-                rr = parse_html(html)
+            rr = auto_parse.auto_parse_html(html,global_marks[0])
             for rt in rr:
                 rt['parent_url'] = current_url0
                 rt['query_date'] = now_date
@@ -143,15 +99,12 @@ def main(urls,auto_file=None):
                 for key in keys:
                     if key.startswith('clicked_'):
                         pass 
-            # df = pd.DataFrame(rr)
-            # df.to_sql(table_name,db,if_exists='append')
-            # db.commit()
             for i in rr:
                 result_count += 1
                 print(result_count)
                 pprint(i)
             try:
-                a = driver.find_element_by_link_text('下一页') 
+                a = driver.find_element_by_link_text(next_button) 
                 a.send_keys(Keys.ENTER)
 
                 time.sleep(random.randrange(10,20))
@@ -182,4 +135,4 @@ def get_a_new_tab(driver):
     driver.execute_script(js)
 if __name__ == '__main__':
     
-    main(None,'./mooc.json')
+    main('./mooc.json')

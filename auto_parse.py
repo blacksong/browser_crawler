@@ -5,8 +5,45 @@ from pprint import pprint
 global_re = {'.attrs':re.compile('\.[^\.]+')}
 global_option = ('.clicked','.download','.attrs')
 def find_item_bs(global_bs,all_tag_text,label_dict):
+    def include_self_attrs(bs):
+        for mark_type,content in self_attrs.values():
+            if mark_type == -1:
+                tag0,attrs0 = content[0][0][:2]
+            # print(tag0,attrs0)
+            t = findAll_bs(bs,tag0,attrs0)
+            if len(t) == 0 and not compare_attrs(attrs0,bs.attrs):
+                return False
+        return True
+    def deal_attrs(val):
+        if isinstance(val[0],int):
+            return tuple(val)
+        elif isinstance(val[0],str):
+            #检查val最后一个元素，如果是字符串则意味着获取最终tag的某个属性，否则意味着获取文本
+            if isinstance(val[-1],str):
+                href = val[-1]
+                val = val[:-1]
+            else:
+                href = None
+            llt = []
+            i = 0
+            nn = len(val)
+            while nn>i:
+                if isinstance(val[i],str):
+                    ltemp = list(val[i:i+2])
+                    i+=2
+                    if len(val)>i and isinstance(val[i],int):
+                        ltemp.append(val[i])
+                        i+=1 
+                    else:
+                        ltemp.append(0)
+                    llt.append(ltemp)
+            return -1,(tuple(llt),href)
+        else:
+            raise Exception('type error 0002')
+
     ll = []
-    self_attrs = {key:tuple(label_dict[key]) for key in label_dict if key.find('.attrs') != -1}
+    label_dict = {k:v for k,v in label_dict.items() if not (k.startswith('__') and k.endswith('__'))}
+    self_attrs = {key:deal_attrs(val) for key,val in label_dict.items() if not isinstance(val,str)}
     for i in self_attrs:
         label_dict.pop(i)
     cut_href = lambda x:[i for i in  global_re['.attrs'].findall(x) if i not in global_option][0][1:]
@@ -35,21 +72,21 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
         if value is 0:
             print(f'{key} is not matched correctly.')
     try:
-        item_bs = ll[-1]
+        ll.sort(key = lambda x:len(str(x)))
+        item_bs = ll[0]
+
     except Exception as e:
         print("*"*45,"\nhtml has write in debug.html\n","*"*45)
         open('debug.html','w').write(str(global_bs))
         raise Exception(e)
     tag_type = item_bs.name
-    item_attrs = {key:' '.join(item_bs.attrs[key]) for key in item_bs.attrs }
-    # print(item_attrs)
-    k = global_bs.find_all([tag_type],**item_attrs)
+    item_attrs = pure_attrs(item_bs.attrs)
+    k = findAll_bs(global_bs,[tag_type],item_attrs)
     print('自动匹配项数',len(k))
     all_item_tag = item_bs.find_all()
     all_item_tag.insert(0,item_bs)
     lables_attrs = {key:find_attrs_label(item_bs,all_item_tag,key,val) for key,val in label_dict.items()}
     lables_attrs.update(self_attrs)
-    pprint(lables_attrs)
     return {'item_tag':tag_type,'item_attrs':item_attrs,'labels_attrs':lables_attrs}
 
 def find_attrs_label(item_bs,all_item_tag,key,label):
@@ -170,7 +207,27 @@ def has_href(bs,href,label):
     return None
 def parse_label(item_bs,mark):
     mark_type,content = mark 
-    if mark_type is 0:
+    result = []
+    if mark_type == -1:
+        div_attrs,href = content
+        bs = item_bs
+        for nt,(tag,attrs,i) in enumerate(div_attrs):
+            recursive = True if nt is 0 else False
+            bs = findAll_bs(bs,tag,attrs,recursive=recursive)
+            if bs:
+                bs = bs[i]
+            else:
+                break 
+        else:
+            if href:
+                r = bs.attrs.get(href,[])
+                if isinstance(r,str):
+                    result = [r]
+                else:
+                    result = [' '.join(r)]
+            else:
+                result = [bs.text]
+    elif mark_type is 0:
         '''<h3 class="course-card-name">Go开发短地址服务</h3>'''
         '''Go开发短地址服务'''
         tag_type,attrs = content
@@ -181,7 +238,6 @@ def parse_label(item_bs,mark):
         '''1343'''
         tag_type,tag_type_i,attrs_i = content 
         all_tag = item_bs.find_all([tag_type])
-        result = []
         for tag in all_tag:
             t = tag.find([tag_type_i],**attrs_i)
             if t:
@@ -197,11 +253,9 @@ def parse_label(item_bs,mark):
         if div:
             div = div[0]
             spans = findAll_bs(div,tag2,attrs2,recursive= False)
-            result = [spans[nn].text]
-        else:
-            result = []
+            if spans:
+                result = [spans[nn].text]
     elif mark_type is 3:
-        
         if content[0] == 'child':
             '''<div class="course-card-container"> <a target="_blank" href="/learn/1150" class="course-card"> </a> </div>'''
             _,href,tag_div,attrs_p,tag_a,attrs_c = content
@@ -219,18 +273,21 @@ def parse_label(item_bs,mark):
             result = [i.attrs[href] for i in bs_list if i.attrs.get(href,None)]
         result = [i if isinstance(i,str) else ' '.join(i) for i in result]
     return result
+def compare_attrs(attrs1,attrs2):
+    for key in attrs1.keys():
+        t = attrs2.get(key)
+        if t:
+            if isinstance(t,str) and t != attrs1[key]:
+                return False
+            else:
+                if ''.join(attrs1[key]) != ''.join(t):
+                    return False
+        else:
+            return False
+    return True
 def findAll_bs(bs,name,attrs,recursive=True):
     t = bs.findAll(name,attrs,recursive = recursive)
-    def compare_attrs(attrs1,attrs2):
-        for key in attrs1.keys():
-            t = attrs2.get(key)
-            if t:
-                if isinstance(t,str) and t != attrs1[key]:
-                    return False
-                else:
-                    if ''.join(attrs1[key]) != ''.join(t):
-                        return False
-        return True
+
     return [i for i in t if compare_attrs(attrs,i.attrs)]
 
 
@@ -246,7 +303,7 @@ def auto_parse_html(html, auto_mark):
     bs = BeautifulSoup(html,'lxml')
     item_tag,item_attrs = auto_mark['item_tag'],auto_mark['item_attrs']
     labels_attrs = auto_mark['labels_attrs']
-    t = bs.find_all([item_tag],**item_attrs)
+    t = findAll_bs(bs,[item_tag],item_attrs)
     return [auto_parse_item(item_bs,labels_attrs) for item_bs in t]
 def auto_parse_item(item_bs,labels_attrs):
     d = {key:','.join(parse_label(item_bs,value)) for key,value in labels_attrs.items()}
@@ -277,13 +334,17 @@ if __name__=='__main__':
         "cost-price":"￥266.00",
         "discount-price":"￥229.00",
         "course.href":"/class/386.html",
-        "course-price.attrs":(0,('div',{'class':'course-card-price'}))
+        "course-price":('div',{'class':'course-card-price'}),
+        "__next__":"下一页"
     }
     auto_mark = find_item_bs(bs,all_tag_text,texts)
     print(auto_mark)
     rr = auto_parse_html(html,auto_mark)
-    for i in rr:
-        pprint(i)
+    # pprint(rr[-1])
+    print(len(rr))
+    pprint((rr))
+    # for i in rr:
+    #     print(i['course'])
     # html_e = open('element_bs.html').read()
     # bs = BeautifulSoup(html_e,'lxml')
     # print(bs.img.attrs)
