@@ -9,7 +9,6 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
         for mark_type,content in self_attrs.values():
             if mark_type == -1:
                 tag0,attrs0 = content[0][0][:2]
-            # print(tag0,attrs0)
             t = findAll_bs(bs,tag0,attrs0)
             if len(t) == 0 and not compare_attrs(attrs0,bs.attrs):
                 return False
@@ -42,10 +41,17 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
             raise Exception('type error 0002')
 
     ll = []
+    self_set_item = label_dict.get('__item__')
     label_dict = {k:v for k,v in label_dict.items() if not (k.startswith('__') and k.endswith('__'))}
     self_attrs = {key:deal_attrs(val) for key,val in label_dict.items() if not isinstance(val,str)}
     for i in self_attrs:
         label_dict.pop(i)
+    if self_set_item:
+        tag_type,item_attrs = self_set_item
+        item_attrs = pure_attrs(item_attrs)
+        matched_items = findAll_items(global_bs,[tag_type],item_attrs)
+        all_tag_text = [(i,i.text) for i in matched_items]
+
     cut_href = lambda x:[i for i in  global_re['.attrs'].findall(x) if i not in global_option][0][1:]
     href_tuple = [(cut_href(key),val) for key,val in label_dict.items() if key.find('.')!=-1]
     other_dict = {key:val for key,val in label_dict.items() if key.find('.')==-1}
@@ -59,6 +65,8 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
                     ts[i] = 1
         if sum(ts) == len(href_tuple):
             hrefs_list.append((bs,bs_text))
+    if len(hrefs_list) is 0:
+        hrefs_list = all_tag_text
     counter_dict = {i:0 for i in other_dict.keys()}
     for bs,bs_text in hrefs_list:
         for key,label in other_dict.items():
@@ -79,10 +87,11 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
         print("*"*45,"\nhtml has write in debug.html\n","*"*45)
         open('debug.html','w').write(str(global_bs))
         raise Exception(e)
-    tag_type = item_bs.name
-    item_attrs = pure_attrs(item_bs.attrs)
-    k = findAll_bs(global_bs,[tag_type],item_attrs)
-    print('自动匹配项数',len(k))
+    if not self_set_item:
+        tag_type = item_bs.name
+        item_attrs = pure_attrs(item_bs.attrs)
+        matched_items = findAll_bs(global_bs,[tag_type],item_attrs)
+    print('自动匹配项数',len(matched_items))
     all_item_tag = item_bs.find_all()
     all_item_tag.insert(0,item_bs)
     lables_attrs = {key:find_attrs_label(item_bs,all_item_tag,key,val) for key,val in label_dict.items()}
@@ -105,9 +114,6 @@ def find_attrs_label(item_bs,all_item_tag,key,label):
         tag_type = label_bs.name
         k = item_bs.find_all([tag_type],**attrs)
         mark_type = 0
-        if key == 'comment':
-            print(label_bs)
-            # exit()
     if key.find('.') != -1 or len(k) != 1:
         mark_type,content = find_attrs_label2(item_bs,all_item_tag,key,label)
     else:
@@ -193,7 +199,7 @@ def find_attrs_label2(item_bs,all_item_tag,key,label):
     return mark_type,content
 def pure_attrs(attrs):
     attrs_keys = ('class','target','style')
-    ff =  {key:value for key,value in attrs.items() if key in attrs_keys}
+    ff =  {key:value if not isinstance(value,str) else value.split() for key,value in attrs.items() if key in attrs_keys}
     return ff
 def has_href(bs,href,label):
     t = re.search(label,bs.attrs.get(href,'hfefefe'))
@@ -217,7 +223,10 @@ def parse_label(item_bs,mark):
             if bs:
                 bs = bs[i]
             else:
-                break 
+                if nt is 0 and compare_attrs(attrs,pure_attrs(item_bs.attrs)):
+                    bs = item_bs 
+                else:
+                    break
         else:
             if href:
                 r = bs.attrs.get(href,[])
@@ -250,6 +259,8 @@ def parse_label(item_bs,mark):
         '''高级'''
         tag,attrs,tag2,attrs2,nn = content
         div = findAll_bs(item_bs,tag,attrs)
+        if len(div) == 0 and tag == item_bs.name and compare_attrs(attrs,pure_attrs(item_bs.attrs)):
+            div = [item_bs]
         if div:
             div = div[0]
             spans = findAll_bs(div,tag2,attrs2,recursive= False)
@@ -287,9 +298,19 @@ def compare_attrs(attrs1,attrs2):
     return True
 def findAll_bs(bs,name,attrs,recursive=True):
     t = bs.findAll(name,attrs,recursive = recursive)
-
     return [i for i in t if compare_attrs(attrs,i.attrs)]
+def findAll_items(bs,name,attrs):
+    def compare_attrs_item(attrs1,attrs2):
+        for key,value in attrs1.items():
+            temp = attrs2.get(key,set())
+            for t in value:
+                if t not in temp:
+                    return False 
+        else:
+            return True
 
+    t = bs.findAll(name,attrs)
+    return [i for i in t if compare_attrs_item(attrs,i.attrs)]
 
 def equal_attrs(attrs_origin,attrs_target):
     for key in attrs_target:
@@ -303,28 +324,18 @@ def auto_parse_html(html, auto_mark):
     bs = BeautifulSoup(html,'lxml')
     item_tag,item_attrs = auto_mark['item_tag'],auto_mark['item_attrs']
     labels_attrs = auto_mark['labels_attrs']
-    t = findAll_bs(bs,[item_tag],item_attrs)
+    t = findAll_items(bs,[item_tag],item_attrs)
     return [auto_parse_item(item_bs,labels_attrs) for item_bs in t]
 def auto_parse_item(item_bs,labels_attrs):
-    d = {key:','.join(parse_label(item_bs,value)) for key,value in labels_attrs.items()}
+    fget = lambda x:x[0] if len(x)>0 else ''
+    d = {key:fget(parse_label(item_bs,value)) for key,value in labels_attrs.items()}
     return d
 
-
-if __name__=='__main__':
+def debug_list_html():
     html = open('comment.html').read()
     bs = BeautifulSoup(html,'lxml')
     all_tag_text = [(i,i.text) for i in bs.find_all()]
-    texts = {
-        "course": "Go开发短地址服务",
-        "level": "高级",
-        "hot":"14\d\d",
-        "profile":"2小时带你通过GO语言实现短地址服务。",
-        "money":"免费",
-        "course.href":"/learn/1150",
-        "data.data-original":'//img\d*.mukewang.com/5d3e866e095df28306000338-240-135.png',
-        "ddd":"收藏",
-        "ddd.title":"收藏"
-    }
+
     texts={
         "course": "Linux核心技能与应用",
         "level": "初级",
@@ -335,16 +346,31 @@ if __name__=='__main__':
         "discount-price":"￥229.00",
         "course.href":"/class/386.html",
         "course-price":('div',{'class':'course-card-price'}),
-        "__next__":"下一页"
+        "__next__":"下一页",
+        # "__item__":('div',{'class':"shizhan-course-wrap l  "})
+    }
+    auto_mark = find_item_bs(bs,all_tag_text,texts)
+    print(auto_mark)
+    rr = auto_parse_html(html,auto_mark)
+    pprint((rr))
+    print(len(rr))
+def debug_course_html():
+    html = open('course.html').read()
+    bs = BeautifulSoup(html,'lxml')
+    all_tag_text = [(i,i.text) for i in bs.find_all()]
+
+    texts={
+        "level2":"初级",
+        "duration":"20小时",
+        "hot2":"110",
+        "comment2":"100%"
     }
     auto_mark = find_item_bs(bs,all_tag_text,texts)
     print(auto_mark)
     rr = auto_parse_html(html,auto_mark)
     # pprint(rr[-1])
-    print(len(rr))
-    pprint((rr))
-    # for i in rr:
-    #     print(i['course'])
-    # html_e = open('element_bs.html').read()
-    # bs = BeautifulSoup(html_e,'lxml')
-    # print(bs.img.attrs)
+    # print(len(rr))
+    pprint((rr[-1]))
+if __name__=='__main__':
+    # debug_course_html()
+    debug_list_html()

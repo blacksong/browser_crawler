@@ -1,18 +1,26 @@
 {
-    "items": {
-        "urls_list":[[
+    "items1": {
+        "__urls__":[[
             "https://coding.imooc.com",
             "慕课网",
             "实战课程"
         ]],
         "course": "Linux核心技能与应用",
         "level": "初级",
-        "hot":"9\\d",
+        "hot":"11\\d",
         "comment":"2人评价",
         "profile":"一网打尽Linux必备核心技能，面试、升职必备的“敲门砖”。",
         "cost-price":"￥266.00",
         "discount-price":"￥229.00",
-        "course.href":"/class/386.html",
-        "course-price.attrs":[0,["div",{"class":"course-card-price"}]]
+        "items2.href.clicked":"/class/386.html",
+        "course-price":[0,["div",{"class":"course-card-price"}]],
+        "__item__":["div",{"class":"shizhan-course-wrap l  "}]
+    },
+    "items2":{
+        "__urls__":["https://coding.imooc.com/class/386.html"],
+        "level2":"初级",
+        "duration":"20小时",
+        "hot2":"11\\d",
+        "comment2":"100%"
     }
 }

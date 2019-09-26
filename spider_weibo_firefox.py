@@ -19,11 +19,10 @@ import auto_parse
 global_attrs = {}
 global_browser = {'name':None}
 
-def get_a_driver():
-    profile_path = '/home/yxs/.mozilla/firefox/sprj69sp.default'
-    try:
+def get_a_driver(profile_path = None):
+    if profile_path is not None:
         driver = webdriver.Firefox(profile_path)
-    except:
+    else:
         driver = webdriver.Firefox()
     global_browser['name'] = 'driver'
     global_browser['driver'] = driver
@@ -33,13 +32,18 @@ def get_a_session():
     global_browser['name'] = 'session'
     return global_browser['session']
 
-def get_html(url):
+def get_html(url,table = 0):
     if global_browser['name'] == 'session':
         return global_browser['session'].get(url).text
     elif global_browser['name'] == 'file':
         pass
     elif global_browser['name'] == 'driver':
         driver = global_browser['driver']
+        if len(driver.window_handles) <= table:
+            get_a_new_tab(driver)
+            time.sleep(10)
+        if driver.current_window_handle != driver.window_handles[table]:
+            driver.switch_to.window(driver.window_handles[table])
         driver.get(url)
         wait_browser(driver,20)
         return driver.page_source
@@ -68,9 +72,22 @@ def init_auto_parse(auto_file):
         bs = BeautifulSoup(html, 'lxml')
         all_tag_text = [(i, i.text) for i in bs.find_all()]
         k = auto_parse.find_item_bs(bs, all_tag_text, items)
+        print(page,k)
         global_marks.append(k)
     next_button = jdata[pages[0]].get('__next__','下一页')
     return urls[0],next_button
+def get_page_in_new_tab(short_url,parrent_url,table):
+    website = parrent_url.split('/')
+    if short_url.startswith('http'):
+        url_clicked = short_url 
+    elif short_url.startswith('//'):
+        url_clicked = website[0]+short_url
+    elif short_url.startswith('/'):
+        url_clicked = '/'.join(website[:3]) + short_url
+    else:
+        url_clicked = '/'.join(website[:-1]) + short_url
+    print(table,url_clicked)
+    get_html(url_clicked,table)
 def main(auto_file=None):
     result = []
     driver = get_a_driver()
@@ -84,10 +101,12 @@ def main(auto_file=None):
             url = item
         else:
             url = item[0]
+        driver.switch_to.window(driver.window_handles[0])
         html = get_html(url)
         wait_browser(driver,50)
         current_url0 = driver.current_url
         while True:
+            table_n = 0
             html = driver.page_source
             rr = auto_parse.auto_parse_html(html,global_marks[0])
             for rt in rr:
@@ -97,8 +116,18 @@ def main(auto_file=None):
                     rt[f'input_tag{i+1}'] = tag 
                 keys = list(rt.keys())
                 for key in keys:
-                    if key.startswith('clicked_'):
-                        pass 
+                    if key.find('.clicked') != -1:
+                        table_m = table_n+1
+                        get_page_in_new_tab(rt[key],current_url0,table_m)
+                        time.sleep(1)
+                        html2 = driver.page_source 
+                        rty = auto_parse.auto_parse_html(html2,global_marks[table_m])
+                        print(rty)
+                        if not rty:
+                            continue
+                        rt.update(rty[0])
+            driver.switch_to.window(driver.window_handles[table_n])
+            print(len(rr),current_url0)
             for i in rr:
                 result_count += 1
                 print(result_count)
@@ -133,6 +162,8 @@ def main(auto_file=None):
 def get_a_new_tab(driver):
     js = 'window.open("");'
     driver.execute_script(js)
+    print('add a new tab')
+    time.sleep(2)
 if __name__ == '__main__':
     
     main('./mooc.json')
