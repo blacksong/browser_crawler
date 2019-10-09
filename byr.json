@@ -1,0 +1,28 @@
+{
+    "items1": {
+        "__urls__":[
+            ["https://bt.byr.cn/torrents.php?cat=408","电影","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=401&page=64","剧集","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=404&page=49","动漫","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=402&page=19","音乐","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=405","综艺","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=403","游戏","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=406","软件","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=407","资料","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=409","体育","全部"],
+            ["https://bt.byr.cn/torrents.php?cat=410","记录","全部"]
+
+        ],
+        "name": ["td",{},1,"table",{},"tbody",{},"tr",{},"td",{},"a",{},"b",{}],
+        "name_href": ["td",{},1,"table",{},"tbody",{},"tr",{},"td",{},"a",{},"href"],
+        "comment": ["td",{},2],
+        "time": ["td",{},3],
+        "color_type": ["class"],
+        "size": ["td",{},4],
+        "upload": ["td",{},5],
+        "download": ["td",{},6],
+        "all_download": ["td",{},7],
+        "author": ["td",{},8],
+        "__item__":["table",{"class":"torrents"},"tbody",{},0,"tr",{}]
+    }
+}

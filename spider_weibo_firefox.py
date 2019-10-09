@@ -16,6 +16,7 @@ from pprint import pprint
 import json
 from selenium.webdriver.common.keys import Keys
 import auto_parse
+from IPython import embed
 global_attrs = {}
 global_browser = {'name':None}
 
@@ -90,8 +91,9 @@ def get_page_in_new_tab(short_url,parrent_url,table):
     get_html(url_clicked,table)
 def main(auto_file=None):
     result = []
-    driver = get_a_driver()
+    driver = get_a_driver('/home/yxs/.mozilla/firefox/sprj69sp.default')
     now_date = time.strftime('%Y%m%d',time.gmtime())
+    input("请登录账号（设置cookie使用，如无需登录账号可直接回车）:")
     tt,next_button = init_auto_parse(auto_file)
     result_count = 0
     urls = tt
@@ -133,8 +135,15 @@ def main(auto_file=None):
                 print(result_count)
                 pprint(i)
             try:
-                a = driver.find_element_by_link_text(next_button) 
-                a.send_keys(Keys.ENTER)
+                try:
+                    a = driver.find_element_by_link_text(next_button) 
+                    a.send_keys(Keys.ENTER)
+                except:
+                    next_url = auto_parse.get_next_url(next_button,driver.page_source,driver.current_url)
+                    print(next_url)
+                    if next_url:
+                        driver.get(next_url)
+
 
                 time.sleep(random.randrange(10,20))
             
@@ -154,16 +163,23 @@ def main(auto_file=None):
                 temp_result.extend(rr)
                 break
         df = pd.DataFrame(temp_result)
+        
+        temp_p = Path(f'{item[1]}_{item[2]}.csv')
+        if temp_p.exists():
+            df2 = pd.read_csv(temp_p)[df.keys()]
+        df = df.append(df2)
         df = df.drop_duplicates(df.keys())
-        df.to_csv(f'{item[1]}_{item[2]}.csv')
+        df.to_csv(temp_p,index=False)
+
     df = pd.DataFrame(result)
     df = df.drop_duplicates(df.keys())
-    df.to_csv('spider_result.csv')
+    df.to_csv('spider_result.csv',index=False)
 def get_a_new_tab(driver):
     js = 'window.open("");'
+    # help(driver.execute_script)
     driver.execute_script(js)
     print('add a new tab')
     time.sleep(2)
 if __name__ == '__main__':
     
-    main('./mooc.json')
+    main('./byr.json')

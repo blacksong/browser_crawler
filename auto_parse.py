@@ -36,6 +36,7 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
                     else:
                         ltemp.append(0)
                     llt.append(ltemp)
+            llt = [[i[0],pure_attrs(i[1]),i[2]] for i in llt]
             return -1,(tuple(llt),href)
         else:
             raise Exception('type error 0002')
@@ -47,10 +48,10 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
     for i in self_attrs:
         label_dict.pop(i)
     if self_set_item:
-        tag_type,item_attrs = self_set_item
-        item_attrs = pure_attrs(item_attrs)
-        matched_items = findAll_items(global_bs,[tag_type],item_attrs)
-        all_tag_text = [(i,i.text) for i in matched_items]
+        _,(items_mark,_) = deal_attrs(self_set_item)
+        items_mark[-1][-1] = -1
+        items_mark = 1,items_mark
+        matched_items = findAll_block(global_bs,items_mark)
 
     cut_href = lambda x:[i for i in  global_re['.attrs'].findall(x) if i not in global_option][0][1:]
     href_tuple = [(cut_href(key),val) for key,val in label_dict.items() if key.find('.')!=-1]
@@ -61,7 +62,7 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
         ts = [0]*len(href_tuple)
         for ibs in bs_list:
             for i,(k,v) in enumerate(href_tuple):
-                if re.search(v,ibs.attrs.get(k,'')):
+                if re.search(v,ibs.attrs.get(k,'')) or ibs.attrs.get(k,'').find(v) != -1:
                     ts[i] = 1
         if sum(ts) == len(href_tuple):
             hrefs_list.append((bs,bs_text))
@@ -70,7 +71,7 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
     counter_dict = {i:0 for i in other_dict.keys()}
     for bs,bs_text in hrefs_list:
         for key,label in other_dict.items():
-            if not re.search(label,bs_text):
+            if (not re.search(label,bs_text)) and bs_text.find(label)==-1:
                 break 
             else:
                 counter_dict[key] += 1
@@ -96,13 +97,13 @@ def find_item_bs(global_bs,all_tag_text,label_dict):
     all_item_tag.insert(0,item_bs)
     lables_attrs = {key:find_attrs_label(item_bs,all_item_tag,key,val) for key,val in label_dict.items()}
     lables_attrs.update(self_attrs)
-    return {'item_tag':tag_type,'item_attrs':item_attrs,'labels_attrs':lables_attrs}
+    return {'items_mark':items_mark,'labels_attrs':lables_attrs}
 
 def find_attrs_label(item_bs,all_item_tag,key,label):
     ll = []
     if key.find('.') == -1:
         for i in all_item_tag:
-            if re.search(label,i.text):
+            if re.search(label,i.text) or i.text.find(label) !=-1:
                 ll.append(i)
         try:
             label_bs = ll[-1]
@@ -133,7 +134,7 @@ def find_attrs_label2(item_bs,all_item_tag,key,label):
                 ll.append(i)
     else:
         for i in all_item_tag:
-            if re.search(label,i.text):
+            if re.search(label,i.text) or i.text.find(label) !=-1:
                 ll.append(i)
         is_href = False
     ll.sort(key=lambda x:len(str(x)))
@@ -160,6 +161,7 @@ def find_attrs_label2(item_bs,all_item_tag,key,label):
             mark_type,content = 1,c
     if mark_type is 0 and not is_href:
         #进行mark_type==2的尝试
+        print(label)
         item_parent = label_bs0.find_parent()
         if item_parent.text.find(label) != -1:
             tag_type = item_parent.name
@@ -167,11 +169,11 @@ def find_attrs_label2(item_bs,all_item_tag,key,label):
             attrs_child = pure_attrs(label_bs0.attrs)
             t = findAll_bs(item_parent,tag_type0,attrs_child,recursive=False)
             for i,s in enumerate(t):
-                if re.search(label,s.text):
+                if re.search(label,s.text) or s.text.find(label) !=-1:
                     nn = i 
             c = tag_type,attrs,tag_type0,attrs_child,nn
             t = parse_label(item_bs,(2,c))
-            if re.search(label,t[0]):
+            if re.search(label,t[0]) or t[0].find(label) !=-1:
                 mark_type,content = 2,c
     if mark_type is 0 and is_href:
         #进行mark_type==3的尝试
@@ -218,8 +220,7 @@ def parse_label(item_bs,mark):
         div_attrs,href = content
         bs = item_bs
         for nt,(tag,attrs,i) in enumerate(div_attrs):
-            recursive = True if nt is 0 else False
-            bs = findAll_bs(bs,tag,attrs,recursive=recursive)
+            bs = findAll_bs(bs,tag,attrs,recursive=False)
             if bs:
                 bs = bs[i]
             else:
@@ -297,7 +298,7 @@ def compare_attrs(attrs1,attrs2):
             return False
     return True
 def findAll_bs(bs,name,attrs,recursive=True):
-    t = bs.findAll(name,attrs,recursive = recursive)
+    t = bs.find_all(name,attrs,recursive = recursive)
     return [i for i in t if compare_attrs(attrs,i.attrs)]
 def findAll_items(bs,name,attrs):
     def compare_attrs_item(attrs1,attrs2):
@@ -311,7 +312,34 @@ def findAll_items(bs,name,attrs):
 
     t = bs.findAll(name,attrs)
     return [i for i in t if compare_attrs_item(attrs,i.attrs)]
-
+def get_next_url(next_text,html,parent_url):
+    bs = BeautifulSoup(html,'html5lib')
+    all_tag_text = [(i,i.text) for i in bs.find_all()]
+    bst = None
+    all_tag_text.reverse()
+    for t,s in all_tag_text:
+        if s.find(next_text) !=-1:
+            bst = t
+            break
+    if bst is None:
+        return False 
+    for i in range(10):
+        if bst.attrs.get('href',None):
+            urlt = bst.attrs['href']
+            k = parent_url.split('/')
+            if urlt.startswith('http:') or urlt.startswith('https:'):
+                url_click = urlt 
+            elif urlt.startswith('//'):
+                url_click = parent_url.split(':')[0]+':'+urlt 
+            elif urlt.startswith('/'):
+                url_click = '/'.join(k[:3])+urlt
+            elif urlt.startswith('?'):
+                url_click = parent_url.split('?')[0]+urlt
+            else:
+                url_click = '/'.join(k[:-1])+'/'+urlt
+            return url_click
+        else:
+            bst = bst.find_parent()
 def equal_attrs(attrs_origin,attrs_target):
     for key in attrs_target:
         t = attrs_origin.get(key)
@@ -319,12 +347,34 @@ def equal_attrs(attrs_origin,attrs_target):
             return False 
     return True
 
+def findAll_block(bs,items_mark):
+    mark_type,content = items_mark 
+    if mark_type is 0:
+        item_tag,item_attrs = content 
+        result = findAll_items(bs,item_tag,item_attrs)
+    elif mark_type is 1:
+        first_tag = True
+        bs0 = bs
+        for item_tag,item_attrs,n in content:
+            if first_tag:
+                recursive=True 
+                first_tag = False 
+            else:
+                recursive=False
+            result = findAll_bs(bs0,item_tag,item_attrs,recursive=recursive)
+            if len(result) <= n:
+                result = []
+                break
+            if n>=0:
+                bs0 = result[n]
 
+    return result
 def auto_parse_html(html, auto_mark):
     bs = BeautifulSoup(html,'lxml')
-    item_tag,item_attrs = auto_mark['item_tag'],auto_mark['item_attrs']
+    items_mark = auto_mark['items_mark']
     labels_attrs = auto_mark['labels_attrs']
-    t = findAll_items(bs,[item_tag],item_attrs)
+    # t = findAll_items(bs,[item_tag],item_attrs)
+    t = findAll_block(bs,items_mark)
     return [auto_parse_item(item_bs,labels_attrs) for item_bs in t]
 def auto_parse_item(item_bs,labels_attrs):
     fget = lambda x:x[0] if len(x)>0 else ''
@@ -355,22 +405,30 @@ def debug_list_html():
     pprint((rr))
     print(len(rr))
 def debug_course_html():
-    html = open('course.html').read()
-    bs = BeautifulSoup(html,'lxml')
+    html = open('/home/yxs/F/pythonAPP/browser_crawler/debug.html').read()
+    bs = BeautifulSoup(html,'html5lib')
     all_tag_text = [(i,i.text) for i in bs.find_all()]
 
     texts={
-        "level2":"初级",
-        "duration":"20小时",
-        "hot2":"110",
-        "comment2":"100%"
+        "name": ['td',{},1,'table',{},'tbody',{},'tr',{},'td',{},'a',{},'b',{}],
+        "name_href": ['td',{},1,'table',{},'tbody',{},'tr',{},'td',{},'a',{},'href'],
+        "comment": ['td',{},2,'a',{}],
+        "time": ['td',{},3,'span',{}],
+        "color_type": ['class'],
+        "size": ['td',{},4],
+        "upload": ['td',{},5],
+        "download": ['td',{},6],
+        "all_download": ['td',{},7],
+        "author": ['td',{},8],
+        "__item__":['table',{'class':"torrents"},'tbody',{},0,'tr',{}]
     }
     auto_mark = find_item_bs(bs,all_tag_text,texts)
     print(auto_mark)
     rr = auto_parse_html(html,auto_mark)
-    # pprint(rr[-1])
-    # print(len(rr))
     pprint((rr[-1]))
 if __name__=='__main__':
     # debug_course_html()
-    debug_list_html()
+    # debug_course_html()
+    html = open('/home/yxs/F/pythonAPP/browser_crawler/debug.html').read()
+    t = get_next_url('下一页',html,'https://feefe.con/fef.html')
+    print(t)
