@@ -1,16 +1,16 @@
 {
     "items1": {
         "__urls__":[
-            ["https://bt.byr.cn/torrents.php?cat=408&sort=6&type=desc","电影","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=401&sort=6&type=desc","剧集","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=404&sort=6&type=desc","动漫","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=402&sort=6&type=desc","音乐","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=405&sort=6&type=desc","综艺","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=403&sort=6&type=desc","游戏","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=406&sort=6&type=desc","软件","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=407&sort=6&type=desc","资料","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=409&sort=6&type=desc","体育","全部"],
-            ["https://bt.byr.cn/torrents.php?cat=410&sort=6&type=desc","记录","全部"]
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=408&&sort=6&type=desc&page=196","电影","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=401&&sort=6&type=desc&page=113","剧集","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=404&&sort=6&type=desc&page=184","动漫","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=402&&sort=6&type=desc&page=58","音乐","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=405&&sort=6&type=desc&page=116","综艺","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=403&&sort=6&type=desc&page=81","游戏","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=406&&sort=6&type=desc&page=44","软件","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=407&&sort=6&type=desc&page=136","资料","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=409&&sort=6&type=desc&page=38","体育","全部"],
+            ["https://bt.byr.cn/torrents.php?inclbookmarked=0&pktype=0&incldead=0&spstate=0&cat=410&&sort=6&type=desc&page=61","记录","全部"]
 
         ],
         "name": ["td",{},1,"table",{},"tbody",{},"tr",{},"td",{},"a",{},"b",{}],

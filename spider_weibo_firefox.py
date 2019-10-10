@@ -100,12 +100,20 @@ def main(auto_file=None):
     sleep_e = sleep_s*2
     result_count = 0
     urls = tt
+    url_nn = 0
     for item in urls:
         temp_result = []
+        url_nn+=1
         if isinstance(item,str):
             url = item
+            output_file = f'result_url_{url_nn}.csv'
         else:
             url = item[0]
+            output_file = '_'.join(item[1:])+'.csv'
+        output_file = Path(output_file)
+        if output_file.exists():
+            dft = pd.read_csv(output_file)
+            url = dft['parent_url'].iloc[-1]
         driver.switch_to.window(driver.window_handles[0])
         html = get_html(url)
         wait_browser(driver,50)
@@ -164,16 +172,14 @@ def main(auto_file=None):
                 temp_result.extend(rr)
                 break
         df = pd.DataFrame(temp_result)
-        
-        temp_p = Path(f'{item[1]}_{item[2]}.csv')
-        if temp_p.exists():
-            df2 = pd.read_csv(temp_p)[df.keys()]
-            df = df2.append(df)
-        df = df.drop_duplicates(df.keys())
-        df.to_csv(temp_p,index=False)
+        if output_file.exists():
+            df2 = pd.read_csv(output_file)[df.keys()]
+            df = df2.append(df,ignore_index=True)
+        df = df.drop_duplicates(df.keys(),keep='last')
+        df.to_csv(output_file,index=False)
 
     df = pd.DataFrame(result)
-    df = df.drop_duplicates(df.keys())
+    df = df.drop_duplicates(df.keys(),keep='last')
     df.to_csv('spider_result.csv',index=False)
 def get_a_new_tab(driver):
     js = 'window.open("");'
