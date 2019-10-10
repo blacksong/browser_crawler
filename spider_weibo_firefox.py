@@ -75,8 +75,8 @@ def init_auto_parse(auto_file):
         k = auto_parse.find_item_bs(bs, all_tag_text, items)
         print(page,k)
         global_marks.append(k)
-    next_button = jdata[pages[0]].get('__next__','下一页')
-    return urls[0],next_button
+    
+    return urls[0],jdata[pages[0]]
 def get_page_in_new_tab(short_url,parrent_url,table):
     website = parrent_url.split('/')
     if short_url.startswith('http'):
@@ -94,7 +94,10 @@ def main(auto_file=None):
     driver = get_a_driver('/home/yxs/.mozilla/firefox/sprj69sp.default')
     now_date = time.strftime('%Y%m%d',time.gmtime())
     input("请登录账号（设置cookie使用，如无需登录账号可直接回车）:")
-    tt,next_button = init_auto_parse(auto_file)
+    tt,jdata_item0 = init_auto_parse(auto_file)
+    next_button = jdata_item0.get('__next__','下一页')
+    sleep_s = jdata_item0.get('__sleep__',10)
+    sleep_e = sleep_s*2
     result_count = 0
     urls = tt
     for item in urls:
@@ -143,11 +146,9 @@ def main(auto_file=None):
                     print(next_url)
                     if next_url:
                         driver.get(next_url)
-
-
-                time.sleep(random.randrange(10,20))
             
-                wait_browser(driver,30)
+                wait_browser(driver,60)
+                time.sleep(random.randrange(sleep_s,sleep_e))
                
                 result.extend(rr)
                 temp_result.extend(rr)
@@ -167,7 +168,7 @@ def main(auto_file=None):
         temp_p = Path(f'{item[1]}_{item[2]}.csv')
         if temp_p.exists():
             df2 = pd.read_csv(temp_p)[df.keys()]
-        df = df.append(df2)
+            df = df2.append(df)
         df = df.drop_duplicates(df.keys())
         df.to_csv(temp_p,index=False)
 
